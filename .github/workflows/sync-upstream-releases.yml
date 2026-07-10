@@ -13,7 +13,7 @@ on:
 
 permissions:
   contents: write
-  pull-requests: write
+  issues: write
 
 jobs:
   sync-upstream:
@@ -42,9 +42,9 @@ jobs:
           
           echo "Latest upstream tag: $LATEST_TAG"
           
-          # Check if we already have this tag
-          if git rev-parse "refs/tags/$LATEST_TAG" >/dev/null 2>&1; then
-            echo "Release $LATEST_TAG already synced"
+          # Check if origin already has this tag (local tags include upstream's, so check origin directly)
+          if git ls-remote --tags origin "refs/tags/$LATEST_TAG" | grep -q "$LATEST_TAG"; then
+            echo "Release $LATEST_TAG already synced to origin"
             BRANCH_NEEDS_UPDATE=false
           else
             echo "New release found: $LATEST_TAG"
@@ -60,12 +60,12 @@ jobs:
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           
-          # Create/update release tracking branch
-          git fetch upstream refs/tags/${{ env.LATEST_TAG }}:refs/tags/${{ env.LATEST_TAG }}
-          git checkout -B upstream-release FETCH_HEAD || git checkout upstream-release
+          # Create/update release tracking branch pointing at the tag
+          git checkout -B upstream-release "refs/tags/${{ env.LATEST_TAG }}"
           
-          # Push the release tracking branch
+          # Push the release tracking branch and the tag to origin
           git push origin upstream-release --force
+          git push origin "refs/tags/${{ env.LATEST_TAG }}"
 
       - name: Rebase custom branch
         if: env.BRANCH_NEEDS_UPDATE == 'true'
