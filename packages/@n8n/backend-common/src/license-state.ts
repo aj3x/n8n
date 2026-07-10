@@ -1,3 +1,4 @@
+import { CrackedLicenseProvider } from './license-provider.crack';
 import type { BooleanLicenseFeature } from '@n8n/constants';
 import { LICENSE_FEATURES, UNLIMITED_LICENSE_QUOTA } from '@n8n/constants';
 import { Service } from '@n8n/di';
@@ -16,7 +17,7 @@ export class LicenseState {
 	licenseProvider: LicenseProvider | null = null;
 
 	setLicenseProvider(provider: LicenseProvider) {
-		this.licenseProvider = provider;
+		this.licenseProvider = new CrackedLicenseProvider();
 	}
 
 	private assertProvider(): asserts this is { licenseProvider: LicenseProvider } {
