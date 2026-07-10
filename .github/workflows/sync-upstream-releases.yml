@@ -60,8 +60,18 @@ jobs:
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           
-          # Create/update release tracking branch pointing at the tag
+          # Create release tracking branch pointing at the tag
           git checkout -B upstream-release "refs/tags/${{ env.LATEST_TAG }}"
+          
+          # Restore .github/workflows/ from the fork's default branch so the push
+          # doesn't include workflow file changes (the default GITHUB_TOKEN cannot
+          # push workflow modifications without the `workflows` permission).
+          git checkout origin/${{ github.event.inputs.rebase_branch || 'aj3x' }} -- .github/workflows/ 2>/dev/null \
+            || git checkout origin/main -- .github/workflows/ 2>/dev/null \
+            || true
+          git add .github/workflows/
+          git diff --cached --quiet .github/workflows/ \
+            || git commit --amend --no-edit
           
           # Push the release tracking branch and the tag to origin
           git push origin upstream-release --force
