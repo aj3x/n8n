@@ -10,6 +10,7 @@ import {
 	type BooleanLicenseFeature,
 	type NumericLicenseFeature,
 } from '@n8n/constants';
+import { LicenseManagerCracked } from './license-manager.crack';
 import { SettingsRepository } from '@n8n/db';
 import { OnLeaderStepdown, OnLeaderTakeover, OnPubSubEvent, OnShutdown } from '@n8n/decorators';
 import { Container, Service } from '@n8n/di';
@@ -35,6 +36,7 @@ type LicenseRefreshCallback = (cert: string) => void;
 @Service()
 export class License implements LicenseProvider {
 	private manager: LicenseManager | undefined;
+	private crackedManager: LicenseManagerCracked | undefined = new LicenseManagerCracked();
 
 	private isShuttingDown = false;
 
@@ -252,7 +254,7 @@ export class License implements LicenseProvider {
 	}
 
 	isLicensed(feature: BooleanLicenseFeature) {
-		return this.manager?.hasFeatureEnabled(feature) ?? false;
+		return this.crackedManager?.hasFeatureEnabled(feature) ?? false;
 	}
 
 	isCertValid(): boolean {
@@ -383,7 +385,7 @@ export class License implements LicenseProvider {
 	}
 
 	getValue<T extends keyof FeatureReturnType>(feature: T): FeatureReturnType[T] {
-		return this.manager?.getFeatureValue(feature) as FeatureReturnType[T];
+		return this.crackedManager?.getFeatureValue(feature) as FeatureReturnType[T];
 	}
 
 	getManagementJwt(): string {
