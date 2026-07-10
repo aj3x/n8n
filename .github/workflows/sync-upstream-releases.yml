@@ -73,6 +73,10 @@ jobs:
           git diff --cached --quiet .github/workflows/ \
             || git commit --amend --no-edit
           
+          # Re-create the tag pointing at the amended commit so the pushed tag
+          # doesn't reference upstream workflow changes that would be rejected.
+          git tag -f "${{ env.LATEST_TAG }}"
+          
           # Push the release tracking branch and the tag to origin
           git push origin upstream-release --force
           git push origin "refs/tags/${{ env.LATEST_TAG }}"
