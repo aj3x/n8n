@@ -22,4 +22,6 @@ docker buildx build \
 docker buildx imagetools create -t aj3x/n8n:$VERSION aj3x/n8n:latest
 docker buildx imagetools create -t aj3x/n8n:$VERSION-$HASH aj3x/n8n:latest
 
+git tag -a $VERSION -m "Release $VERSION"
+
 echo "aj3x/n8n:$VERSION-$HASH"
