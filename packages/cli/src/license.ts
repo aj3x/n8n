@@ -39,7 +39,7 @@ type LicenseRefreshCallback = (cert: string) => void;
 @Service()
 export class License implements LicenseProvider {
 	private manager: LicenseManager | undefined;
-	private crackedManager: LicenseManagerCracked | undefined = new LicenseManagerCracked();
+	private crackedManager: LicenseManagerCracked = new LicenseManagerCracked();
 
 	private isShuttingDown = false;
 
@@ -126,6 +126,7 @@ export class License implements LicenseProvider {
 			});
 
 			await this.manager.initialize();
+			await this.crackedManager.initialize();
 
 			this.logger.debug('License initialized');
 		} catch (error: unknown) {
@@ -243,6 +244,7 @@ export class License implements LicenseProvider {
 			return;
 		}
 		await this.manager.reload();
+		await this.crackedManager.reload();
 		await this.notifyRefreshCallbacks();
 		this.logger.debug('License reloaded');
 	}
@@ -253,6 +255,7 @@ export class License implements LicenseProvider {
 		}
 
 		await this.manager.renew();
+		await this.crackedManager.reload();
 		this.logger.debug('License renewed');
 	}
 
