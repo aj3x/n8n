@@ -64,8 +64,7 @@ function git_update() {
 
 
 function build_and_push() {
-  pnpm i
-  pnpm build
+  node scripts/build-n8n.mjs
 
   # create a random hash string to use as a unique identifier for the subagent
   HASH=$(openssl rand -hex 4)
