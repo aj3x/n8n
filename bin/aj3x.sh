@@ -47,14 +47,13 @@ git_update() {
   git fetch origin
   git checkout "$branch"
   git pull upstream "$branch"
-  git push
   local base
   base=$(git merge-base aj3x master)
   git diff "${base}...aj3x" > patch.diff
   git apply patch.diff
   git add .
-  git push origin HEAD:"aj3x@${VERSION}"
   git switch -c "aj3x@${VERSION}"
+  git push origin HEAD:"aj3x@${VERSION}"
   git commit -m "aj3x: patch"
 }
 
@@ -70,8 +69,8 @@ build() {
 push() {
   docker buildx imagetools create -t "${IMAGE}:${VERSION}" "${IMAGE}:latest"
   docker buildx imagetools create -t "${IMAGE}:${VERSION}-${HASH}" "${IMAGE}:latest"
-  git tag -a "$VERSION" -m "Release $VERSION"
-  git push origin "$VERSION"
+  git tag -a "aj3x@${VERSION}" -m "Release $VERSION"
+  git push origin "aj3x@${VERSION}"
   echo "${IMAGE}:${VERSION}-${HASH}"
 }
 
