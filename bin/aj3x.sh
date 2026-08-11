@@ -41,13 +41,13 @@ set_upstream() {
 
 # ── Steps ──────────────────────────────────────────────────────────────────────
 git_update() {
+  set_upstream
   local branch="n8n@${VERSION}"
   git fetch upstream
   git fetch origin
   git checkout "$branch"
   git pull upstream "$branch"
   git push
-  set_upstream
   local base
   base=$(git merge-base aj3x master)
   git diff "${base}...aj3x" > patch.diff
