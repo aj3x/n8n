@@ -1,85 +1,109 @@
-#!/bin/sh
+#!/usr/bin/env bash
 set -euo pipefail
 
+# ── Defaults ───────────────────────────────────────────────────────────────────
+DOCKER_USER="aj3x"
+IMAGE="${DOCKER_USER}/n8n"
 
+VERSION=""
+HASH=""
+FORCE=false
+STEPS=()
 
+# ── Usage ──────────────────────────────────────────────────────────────────────
+usage() {
+  cat <<EOF
+Usage: $(basename "$0") [STEPS...] [OPTIONS]
 
-function usage() {
-  echo "Usage: $0 [build <version>] [--help]"
-  echo "Builds the n8n docker image and pushes it to Docker Hub."
-  echo ""
-  echo "Options:"
-  echo "  --help    Show this help message and exit."
-  echo "  --version VERSION    Specify the version to build and push. If not specified, the latest version will be used."
-  echo "  --h, --hash HASH    Specify a hash to use as a unique identifier for the subagent. If not specified, a random hash will be generated."
-  echo "  --only-build    Only build the docker image, do not push it to Docker Hub."
-  echo "  --only-push    Only push the docker image to Docker Hub, do not build it."
-  echo "  --no-git-update    Do not update the git repository before building the docker image."
+Builds and pushes the n8n Docker image to Docker Hub.
+If no steps are given, all three run in order: git build push
+
+Steps:
+  git     Sync branch and apply local patch
+  build   Build and push image as :latest
+  push    Tag :latest as versioned and push git tag
+
+Options:
+  --version VERSION   Version to build (default: latest npm version)
+  --hash HASH         Unique tag suffix (default: random hex)
+  --force             Proceed even if the version already exists on Docker Hub
+  --help              Show this message and exit
+EOF
 }
 
-function main() {
-  if [ "$#" -gt 0 ]; then
-    case "$1" in
-      --help)
-        usage
-        exit 0
-        ;;
-      
-      *)
-        echo "Unknown option: $1"
-        usage
-        exit 1
-        ;;
-    esac
-  fi
-
-  git_update
-
-  build_and_push
-}
-
-BASE_BRANCH="master"
-VERSION=$(npm view n8n version)
-
-BASE_BRANCH="n8n@$VERSION"
-
-# regex version number
-if [[ ! $VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-  echo "Invalid version number: $VERSION"
-  exit 1
-fi
-
-main "$@"
-
-function git_update() {
+# ── Steps ──────────────────────────────────────────────────────────────────────
+git_update() {
+  local branch="n8n@${VERSION}"
   git fetch upstream
   git fetch origin
-  git checkout "$BASE_BRANCH"
-  git pull upstream "$BASE_BRANCH"
+  git checkout "$branch"
+  git pull upstream "$branch"
   git push
-  git checkout aj3x
-  git rebase origin/"$BASE_BRANCH"
-  git push --force-with-lease
+  local base
+  base=$(git merge-base aj3x master)
+  git diff "${base}...aj3x" > patch.diff
+  git apply patch.diff
+  git add .
+  git commit -m "aj3x: patch"
 }
 
-
-function build_and_push() {
+build() {
   node scripts/build-n8n.mjs
-
-  # create a random hash string to use as a unique identifier for the subagent
-  HASH=$(openssl rand -hex 4)
-
   docker buildx build \
     --platform linux/amd64,linux/arm64 \
     -f docker/images/n8n/Dockerfile \
-    -t aj3x/n8n:latest \
+    -t "${IMAGE}:latest" \
     --push .
-
-  docker buildx imagetools create -t aj3x/n8n:$VERSION aj3x/n8n:latest
-  docker buildx imagetools create -t aj3x/n8n:$VERSION-$HASH aj3x/n8n:latest
-
-  git tag -a $VERSION -m "Release $VERSION"
-  git push origin $VERSION
-
-  echo "aj3x/n8n:$VERSION-$HASH"
 }
+
+push() {
+  docker buildx imagetools create -t "${IMAGE}:${VERSION}" "${IMAGE}:latest"
+  docker buildx imagetools create -t "${IMAGE}:${VERSION}-${HASH}" "${IMAGE}:latest"
+  git tag -a "$VERSION" -m "Release $VERSION"
+  git push origin "$VERSION"
+  echo "${IMAGE}:${VERSION}-${HASH}"
+}
+
+# ── Argument parsing ───────────────────────────────────────────────────────────
+parse_args() {
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --help)           usage; exit 0 ;;
+      --version)        VERSION="$2"; shift 2 ;;
+      --hash)           HASH="$2"; shift 2 ;;
+      --force)          FORCE=true; shift ;;
+      git|build|push)   STEPS+=("$1"); shift ;;
+      *)                echo "Unknown argument: $1" >&2; usage; exit 1 ;;
+    esac
+  done
+
+  # default to all steps if none specified
+  [[ ${#STEPS[@]} -eq 0 ]] && STEPS=(git build push)
+}
+
+# ── Main ───────────────────────────────────────────────────────────────────────
+main() {
+  VERSION="${VERSION:-$(npm view n8n version)}"
+  HASH="${HASH:-$(openssl rand -hex 4)}"
+
+  [[ -z "$VERSION" ]] && { echo "Could not determine n8n version." >&2; exit 1; }
+  [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Invalid version: $VERSION" >&2; exit 1; }
+
+  if [[ "$FORCE" == false ]] && docker manifest inspect "${IMAGE}:${VERSION}" > /dev/null 2>&1; then
+    echo "Version $VERSION already exists on Docker Hub. Use --force to override." >&2
+    exit 1
+  fi
+
+  # run in canonical order regardless of how steps were specified
+  for step in git build push; do
+    [[ " ${STEPS[*]} " == *" $step "* ]] || continue
+    case "$step" in
+      git)   git_update ;;
+      build) build ;;
+      push)  push ;;
+    esac
+  done
+}
+
+parse_args "$@"
+main
