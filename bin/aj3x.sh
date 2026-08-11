@@ -58,6 +58,7 @@ git_update() {
 }
 
 build() {
+  pnpm i
   node scripts/build-n8n.mjs
   docker buildx build \
     --platform linux/amd64,linux/arm64 \
