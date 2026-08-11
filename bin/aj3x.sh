@@ -33,6 +33,12 @@ Options:
 EOF
 }
 
+set_upstream() {
+  if ! git remote get-url upstream > /dev/null 2>&1; then
+    git remote add upstream https://github.com/n8n-io/n8n.git
+  fi
+}
+
 # ── Steps ──────────────────────────────────────────────────────────────────────
 git_update() {
   local branch="n8n@${VERSION}"
@@ -41,6 +47,7 @@ git_update() {
   git checkout "$branch"
   git pull upstream "$branch"
   git push
+  set_upstream
   local base
   base=$(git merge-base aj3x master)
   git diff "${base}...aj3x" > patch.diff
