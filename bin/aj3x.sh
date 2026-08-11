@@ -8,6 +8,7 @@ IMAGE="${DOCKER_USER}/n8n"
 VERSION=""
 HASH=""
 FORCE=false
+VERBOSE=false
 STEPS=()
 
 # ── Usage ──────────────────────────────────────────────────────────────────────
@@ -27,6 +28,7 @@ Options:
   --version VERSION   Version to build (default: latest npm version)
   --hash HASH         Unique tag suffix (default: random hex)
   --force             Proceed even if the version already exists on Docker Hub
+  --verbose           Show commands as they are executed
   --help              Show this message and exit
 EOF
 }
@@ -72,6 +74,7 @@ parse_args() {
       --version)        VERSION="$2"; shift 2 ;;
       --hash)           HASH="$2"; shift 2 ;;
       --force)          FORCE=true; shift ;;
+      --verbose)        VERBOSE=true; shift ;;
       git|build|push)   STEPS+=("$1"); shift ;;
       *)                echo "Unknown argument: $1" >&2; usage; exit 1 ;;
     esac
@@ -85,6 +88,9 @@ parse_args() {
 main() {
   VERSION="${VERSION:-$(npm view n8n version)}"
   HASH="${HASH:-$(openssl rand -hex 4)}"
+  if [[ "$VERBOSE" == true ]]; then
+    set -x
+  fi
 
   [[ -z "$VERSION" ]] && { echo "Could not determine n8n version." >&2; exit 1; }
   [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Invalid version: $VERSION" >&2; exit 1; }
