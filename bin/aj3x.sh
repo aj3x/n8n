@@ -53,6 +53,7 @@ git_update() {
   git diff "${base}...aj3x" > patch.diff
   git apply patch.diff
   git add .
+  git push origin HEAD:"aj3x@${VERSION}"
   git switch -c "aj3x@${VERSION}"
   git commit -m "aj3x: patch"
 }
