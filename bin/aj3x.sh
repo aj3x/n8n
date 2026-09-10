@@ -58,9 +58,7 @@ git_update() {
 }
 
 build() {
-  pnpm store prune
-  rm -rf node_modules
-  pnpm i --lockfile-only
+  pnpm i
   node scripts/build-n8n.mjs
   docker buildx build \
     --platform linux/amd64,linux/arm64 \
