@@ -58,7 +58,9 @@ git_update() {
 }
 
 build() {
-  pnpm i
+  pnpm store prune
+  rm -rf node_modules
+  NODE_OPTIONS="--max-old-space-size=8192" pnpm i
   node scripts/build-n8n.mjs
   docker buildx build \
     --platform linux/amd64,linux/arm64 \
