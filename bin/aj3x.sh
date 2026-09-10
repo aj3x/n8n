@@ -60,9 +60,7 @@ git_update() {
 build() {
   pnpm store prune
   rm -rf node_modules
-  # minimumReleaseAge's lockfile verification pass OOMs on this workspace's
-  # lockfile size (pnpm/pnpm#11860); disable it for this local build only.
-  pnpm i --config.minimum-release-age=0
+  pnpm i --lockfile-only
   node scripts/build-n8n.mjs
   docker buildx build \
     --platform linux/amd64,linux/arm64 \
