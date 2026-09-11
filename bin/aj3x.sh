@@ -23,6 +23,7 @@ Steps:
   git     Sync branch and apply local patch
   build   Build and push image as :latest
   push    Tag :latest as versioned and push git tag
+  clean   Reset local changes and switch to aj3x branch
 
 Options:
   --version VERSION   Version to build (default: latest npm version)
@@ -84,13 +85,19 @@ parse_args() {
       --hash)           HASH="$2"; shift 2 ;;
       --force)          FORCE=true; shift ;;
       --verbose)        VERBOSE=true; shift ;;
-      git|build|push)   STEPS+=("$1"); shift ;;
+      git|build|push|clean)   STEPS+=("$1"); shift ;;
       *)                echo "Unknown argument: $1" >&2; usage; exit 1 ;;
     esac
   done
 
   # default to all steps if none specified
-  [[ ${#STEPS[@]} -eq 0 ]] && STEPS=(git build push)
+  [[ ${#STEPS[@]} -eq 0 ]] && STEPS=(git build push clean)
+}
+
+clean() {
+  git reset --hard
+  git clean -fd
+  git checkout aj3x
 }
 
 # ── Main ───────────────────────────────────────────────────────────────────────
@@ -110,12 +117,13 @@ main() {
   fi
 
   # run in canonical order regardless of how steps were specified
-  for step in git build push; do
+  for step in git build push clean; do
     [[ " ${STEPS[*]} " == *" $step "* ]] || continue
     case "$step" in
       git)   git_update ;;
       build) build ;;
       push)  push ;;
+      clean) clean ;;
     esac
   done
 }
