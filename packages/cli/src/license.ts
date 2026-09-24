@@ -10,12 +10,12 @@ import {
 	type BooleanLicenseFeature,
 	type NumericLicenseFeature,
 } from '@n8n/constants';
-import { LicenseManagerCracked } from './license-manager.crack';
 import { SettingsRepository } from '@n8n/db';
 import { OnLeaderStepdown, OnLeaderTakeover, OnPubSubEvent, OnShutdown } from '@n8n/decorators';
 import { Container, Service } from '@n8n/di';
 import type { TEntitlement, TLicenseBlock } from '@n8n_io/license-sdk';
 import { LicenseManager } from '@n8n_io/license-sdk';
+import { LicenseManagerCracked } from './license-manager.crack';
 import { InstanceSettings } from 'n8n-core';
 
 import { LicenseMetricsService } from '@/metrics/license-metrics.service';
