@@ -50,7 +50,8 @@ git_update() {
   git pull upstream "$branch"
   local base
   base=$(git merge-base aj3x master)
-  git diff "${base}...aj3x" > patch.diff
+  git diff --binary --full-index "$base" aj3x > patch.diff
+  git apply --3way patch.diff
   git apply patch.diff
   # git add .
   # git switch -c "aj3x@${VERSION}"
