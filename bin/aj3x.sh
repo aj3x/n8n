@@ -51,8 +51,10 @@ git_update() {
   local base
   base=$(git merge-base aj3x master)
   git diff --binary --full-index "$base" aj3x > patch.diff
-  git apply --3way patch.diff
-  git apply patch.diff
+  if ! git apply --3way patch.diff; then
+    echo "Patch could not be applied cleanly. Resolve the conflicts, then run the remaining steps without rerunning 'git'." >&2
+    return 1
+  fi
   # git add .
   # git switch -c "aj3x@${VERSION}"
   # git push origin HEAD:"aj3x@${VERSION}"
@@ -92,7 +94,9 @@ parse_args() {
   done
 
   # default to all steps if none specified
-  [[ ${#STEPS[@]} -eq 0 ]] && STEPS=(git build push clean)
+  if [[ ${#STEPS[@]} -eq 0 ]]; then
+    STEPS=(git build push clean)
+  fi
 }
 
 clean() {
