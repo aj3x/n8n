@@ -62,9 +62,14 @@ git_update() {
 }
 
 build() {
+  local builder="n8n-multiarch"
+  if ! docker buildx inspect "$builder" > /dev/null 2>&1; then
+    docker buildx create --name "$builder" --driver docker-container
+  fi
   pnpm i
   node scripts/build-n8n.mjs
   docker buildx build \
+    --builder "$builder" \
     --platform linux/amd64,linux/arm64 \
     -f docker/images/n8n/Dockerfile \
     -t "${IMAGE}:latest" \
