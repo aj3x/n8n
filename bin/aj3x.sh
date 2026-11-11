@@ -55,10 +55,6 @@ git_update() {
     echo "Patch could not be applied cleanly. Resolve the conflicts, then run the remaining steps without rerunning 'git'." >&2
     return 1
   fi
-  # git add .
-  # git switch -c "aj3x@${VERSION}"
-  # git push origin HEAD:"aj3x@${VERSION}"
-  # git commit -m "aj3x: patch"
 }
 
 build() {
@@ -79,8 +75,15 @@ build() {
 push() {
   docker buildx imagetools create -t "${IMAGE}:${VERSION}" "${IMAGE}:latest"
   docker buildx imagetools create -t "${IMAGE}:${VERSION}-${HASH}" "${IMAGE}:latest"
-  # git tag -a "aj3x@${VERSION}" -m "Release $VERSION"
-  # git push origin "aj3x@${VERSION}"
+
+  git add .
+  git switch -c "aj3x@${VERSION}"
+  git push origin HEAD:"aj3x@${VERSION}"
+  git commit -m "aj3x: patch"
+
+  git tag -a "aj3x@${VERSION}" -m "Release $VERSION"
+  git push origin "aj3x@${VERSION}"
+  
   echo "${IMAGE}:${VERSION}-${HASH}"
 }
 
